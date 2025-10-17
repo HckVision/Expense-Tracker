@@ -27,7 +27,7 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username == USERNAME and password == PASSWORD:
+        if username == USERNAME and password == PASSWORD or username == 'Jayram' and password == '288722' or username == 'mahesh' and password == '939168@mahi':
             session['logged_in'] = True
             session['username'] = username
             return redirect(url_for('dashboard'))
@@ -97,3 +97,4 @@ def logout():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+

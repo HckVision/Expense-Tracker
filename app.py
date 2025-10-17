@@ -2,15 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from pymongo import MongoClient
 from datetime import datetime
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
-
+# For Vercel serverless
 app = Flask(__name__)
-app.secret_key = 'hckvision_secret_key_2024'
+app.secret_key = os.environ.get('SECRET_KEY', 'hckvision_secret_key_2024')
 
 # MongoDB connection
-MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
+MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
 client = MongoClient(MONGO_URI)
 db = client['hckvision_expenses']
 expenses_collection = db['expenses']
@@ -98,5 +96,6 @@ def logout():
 # Vercel serverless function handler
 app = app
 
+# For local development
 if __name__ == '__main__':
     app.run(debug=True)

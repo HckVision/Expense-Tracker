@@ -27,7 +27,7 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username == USERNAME and password == PASSWORD or username == 'jayram' and password == '288722' or username == 'mahesh' and password == '939168@mahi':
+        if username == USERNAME and password == PASSWORD:
             session['logged_in'] = True
             session['username'] = username
             return redirect(url_for('dashboard'))
@@ -69,6 +69,7 @@ def add_expense():
             'description': description,
             'amount': amount,
             'date': date,
+            'added_by': session.get('username'),  # Store username
             'created_at': datetime.now()
         }
         
@@ -96,4 +97,3 @@ def logout():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-

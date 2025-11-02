@@ -12,6 +12,8 @@ MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
 client = MongoClient(MONGO_URI)
 db = client['hckvision_expenses']
 expenses_collection = db['expenses']
+director_investments_collection = db['director_investments']
+director_profits_collection = db['director_profits']
 
 # Static credentials
 USERNAME = 'gnana'
@@ -88,6 +90,102 @@ def history():
     total = sum(expense['amount'] for expense in expenses_list)
     
     return render_template('history.html', expenses=expenses_list, total=total)
+
+@app.route('/director-investments')
+def director_investments():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    # Get all investments
+    investments_list = list(director_investments_collection.find().sort('date', -1))
+    total_investments = sum(inv['amount'] for inv in investments_list)
+    
+    # Get all profits
+    profits_list = list(director_profits_collection.find().sort('date', -1))
+    total_profits = sum(profit['amount'] for profit in profits_list)
+    
+    # Calculate profit
+    profit = total_profits - total_investments
+    
+    # Calculate individual user totals
+    users = ['gnana', 'mahesh']
+    user_investments = {}
+    user_profits = {}
+    user_net = {}
+    
+    for user in users:
+        user_inv_total = sum(inv['amount'] for inv in investments_list if inv['user'] == user)
+        user_prof_total = sum(profit['amount'] for profit in profits_list if profit['user'] == user)
+        user_investments[user] = user_inv_total
+        user_profits[user] = user_prof_total
+        user_net[user] = user_inv_total - user_prof_total
+    
+    return render_template('director_investments.html', 
+                         investments=investments_list,
+                         profits=profits_list,
+                         total_investments=total_investments,
+                         total_profits=total_profits,
+                         profit=profit,
+                         user_investments=user_investments,
+                         user_profits=user_profits,
+                         user_net=user_net)
+
+@app.route('/add-director-investment', methods=['GET', 'POST'])
+def add_director_investment():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        amount = float(request.form.get('amount'))
+        date = request.form.get('date')
+        remarks = request.form.get('remarks')
+        
+        investment = {
+            'user': session.get('username'),
+            'amount': amount,
+            'date': date,
+            'remarks': remarks,
+            'created_at': datetime.now()
+        }
+        
+        director_investments_collection.insert_one(investment)
+        flash('Director investment added successfully!', 'success')
+        return redirect(url_for('director_investments'))
+    
+    return render_template('add_director_investment.html')
+
+@app.route('/add-director-profit', methods=['GET', 'POST'])
+def add_director_profit():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    # Only gnana can add profits
+    if session.get('username') != 'gnana':
+        flash('Only gnana can add director profits!', 'error')
+        return redirect(url_for('director_investments'))
+    
+    if request.method == 'POST':
+        user = request.form.get('user')
+        amount = float(request.form.get('amount'))
+        date = request.form.get('date')
+        remarks = request.form.get('remarks')
+        
+        profit = {
+            'user': user,
+            'amount': amount,
+            'date': date,
+            'remarks': remarks,
+            'added_by': session.get('username'),
+            'created_at': datetime.now()
+        }
+        
+        director_profits_collection.insert_one(profit)
+        flash('Director profit added successfully!', 'success')
+        return redirect(url_for('director_investments'))
+    
+    # Get list of users for dropdown
+    users = ['gnana', 'Jayram', 'mahesh']
+    return render_template('add_director_profit.html', users=users)
 
 @app.route('/logout')
 def logout():
